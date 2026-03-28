@@ -1,4 +1,5 @@
 import type { Product, KitchenProfile, Printer, ValidationWarning } from "@/types";
+export type { ValidationWarning };
 
 /**
  * Products that have no tags assigned.
