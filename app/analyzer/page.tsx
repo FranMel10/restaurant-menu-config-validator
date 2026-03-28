@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { MenuBundle, Product, RouteNode } from "@/types";
 import { resolveRouting, explainRoute } from "@/lib/resolver";
-import { validateAll, ValidationWarning } from "@/lib/validators";
+import { validateAll } from "@/lib/validators";
+import { ValidationWarning } from "@/types";
 
 export default function AnalyzerPage() {
   const router = useRouter();
