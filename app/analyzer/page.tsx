@@ -4,8 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { MenuBundle, Product, RouteNode } from "@/types";
 import { resolveRouting, explainRoute } from "@/lib/resolver";
-import { validateAll } from "@/lib/validators";
-import { ValidationWarning } from "@/types";
+import { validateAll, ValidationWarning } from "@/lib/validators";
+
 export default function AnalyzerPage() {
   const router = useRouter();
   const [bundle, setBundle] = useState<MenuBundle | null>(null);
@@ -137,14 +137,16 @@ export default function AnalyzerPage() {
       </aside>
 
       {/* ── Main ────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <main className="flex-1 flex flex-col overflow-hidden">
+
         {/* Header */}
         <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-base font-semibold text-gray-900">Menu routing overview</h1>
             <p className="text-xs text-gray-400 mt-0.5">{bundle.products.length} products · {bundle.kitchenProfiles.length} stations · {bundle.printers.length} printers</p>
           </div>
-          <div className="flex gap-2 flex-shrink-0">            <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-center">
+          <div className="flex gap-2">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-center">
               <p className="text-xs text-gray-400">Products</p>
               <p className="text-lg font-semibold text-gray-800">{bundle.products.length}</p>
             </div>
