@@ -3,29 +3,65 @@ import type { MenuBundle, Product, Tag, KitchenProfile, Printer } from "@/types"
 
 // ─── JSON Parser ──────────────────────────────────────────────────────────────
 
-/**
- * Parses a full Flipdish menu export in JSON format.
- * Expected shape: { products, tags, kitchenProfiles, printers }
- */
 export function parseJSON(raw: string): MenuBundle {
   const data = JSON.parse(raw);
-  return {
-    products: (data.products ?? []).map(normalizeProduct),
-    tags: data.tags ?? [],
-    kitchenProfiles: (data.kitchenProfiles ?? data.kitchen_profiles ?? []).map(normalizeProfile),
-    printers: data.printers ?? [],
-  };
+
+  // ── Formato estándar { products, tags, kitchenProfiles, printers } ──
+  if (Array.isArray(data.products) && data.products.length > 0) {
+    return {
+      products: data.products.map(normalizeProduct),
+      tags: data.tags ?? [],
+      kitchenProfiles: (data.kitchenProfiles ?? data.kitchen_profiles ?? []).map(normalizeProfile),
+      printers: data.printers ?? [],
+    };
+  }
+
+  // ── Formato real de Flipdish: { categories: [{ caption, items: [...] }] } ──
+  if (Array.isArray(data.categories)) {
+    const products: Product[] = [];
+
+    for (const category of data.categories) {
+      const categoryName: string = category.caption ?? category.name ?? "";
+      const items = Array.isArray(category.items) ? category.items : [];
+
+      for (const item of items) {
+        // Extraer stationTags desde paramsJson
+        let tags: string[] = [];
+        if (item.paramsJson) {
+          try {
+            const params = JSON.parse(item.paramsJson);
+            const stationTags = params?.kdsConfiguration?.stationTags;
+            if (stationTags) {
+              tags = stationTags.split(",").map((t: string) => t.trim()).filter(Boolean);
+            }
+          } catch {
+            // paramsJson inválido, ignorar
+          }
+        }
+
+        products.push({
+          id: String(item.id ?? ""),
+          name: String(item.caption ?? item.name ?? ""),
+          category: categoryName || undefined,
+          tags,
+          kitchen_profile_id: null,
+          modifier_groups: [],
+        });
+      }
+    }
+
+    // Derivar tags únicos de los productos
+    const tagNames = [...new Set(products.flatMap((p) => p.tags))];
+    const tags: Tag[] = tagNames.map((name, i) => ({ id: `t${i}`, name }));
+
+    return { products, tags, kitchenProfiles: [], printers: [] };
+  }
+
+  throw new Error("Unrecognized JSON format. Expected Flipdish menu export.");
 }
 
 // ─── CSV Parser ───────────────────────────────────────────────────────────────
 
-/**
- * Parses a product-level CSV export.
- * Expected columns: id, name, category, tags (pipe-separated), kitchen_profile_id
- *
- * Tags and profiles must be provided separately (JSON) for full routing.
- * This parser produces a partial MenuBundle — kitchenProfiles/printers may be empty.
- */
 export function parseCSV(raw: string): MenuBundle {
   const result = Papa.parse<Record<string, string>>(raw, {
     header: true,
@@ -50,7 +86,6 @@ export function parseCSV(raw: string): MenuBundle {
       : [],
   }));
 
-  // Derive tags from product data when a separate tag list isn't available
   const tagNames = [...new Set(products.flatMap((p) => p.tags))];
   const tags: Tag[] = tagNames.map((name, i) => ({ id: `t${i}`, name }));
 
